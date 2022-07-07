@@ -427,6 +427,7 @@ namespace vmp
 
 		// Find the first stack access
 		//
+		// ªÒ»°’ª∑√Œ 
 		int i_load_vip_id = is.next( X86_INS_MOV, { X86_OP_REG, X86_OP_MEM }, [ & ] ( const vtil::amd64::instruction& ins )
 		{
 			return
