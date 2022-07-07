@@ -107,6 +107,7 @@ namespace vmp
 
 		// RVA of the current handler
 		//
+		// vm的入口地址
 		uint32_t current_handler_rva = 0;
 
 		// RVA of the current point in virtual instruction stream

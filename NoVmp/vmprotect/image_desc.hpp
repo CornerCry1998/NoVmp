@@ -23,7 +23,9 @@ namespace vmp
 {
 	struct virtual_routine
 	{
+		// vm的内存入口相对地址
 		uint32_t jmp_rva;
+		// 通过0xE9跳到VM入口的是true, 通过0xE8跳到VM入口的是false
 		bool mid_routine;
 		vtil::routine* routine = nullptr;
 	};
@@ -32,7 +34,9 @@ namespace vmp
 	{
 		// Basic PE image & details
 		//
+		// 二进制文件内容
 		std::vector<uint8_t> raw;
+		// 检查的base
 		uint64_t override_image_base = 0;
 
 		win::image_x64_t* get_pe_header() { return ( win::image_x64_t* ) raw.data(); }
@@ -46,11 +50,14 @@ namespace vmp
 
 		// List of virtualized routines
 		//
+		// vm入口容器, 包含二进制文件中所有的vm入口
 		std::vector<virtual_routine> virt_routines;
 
 		// VMProtect specific options.
 		//
+		// 是否有重定向表
 		bool has_relocs = false;
+		// 是否去除常量混淆
 		bool strip_constant_obfuscation = false;
 	};
 };

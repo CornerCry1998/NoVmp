@@ -95,6 +95,7 @@ namespace vmp
 
 		// If virtual instruction pointer is not set:
 		//
+		// Èç¹ûVM_IP Îª0
 		if ( !vstate->vip )
 		{
 			// Parse VMENTER:

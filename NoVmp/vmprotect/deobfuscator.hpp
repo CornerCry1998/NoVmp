@@ -201,7 +201,7 @@ namespace vmp
 				if ( filter( stream[ i ].second ) ) return i;
 			return -1;
 		}
-
+		// 查找下一条指令，并使用过滤函数
 		int next( uint32_t instruction_id,
 				  const std::vector<x86_op_type>& operands,
 				  const fn_instruction_filter& filter,
@@ -263,12 +263,14 @@ namespace vmp
 
 	// Unrolls the entire instruction stream as far as possiblibly predictable statically
 	//
+	// 获取指令执行流程的指令集
 	static instruction_stream deobfuscate( image_desc* img, uint32_t rva_rip )
 	{
 		static std::mutex cache_mutex;
 		static std::map<uint32_t, instruction_stream> cache;
-
+		// 加锁
 		std::lock_guard g( cache_mutex );
+
 		auto& output = cache[ rva_rip ];
 		if ( output.stream.size() ) return output;
 
@@ -288,10 +290,13 @@ namespace vmp
 			// Check if control flow deviates
 			//
 			if ( instruction.is( X86_INS_CALL, { X86_OP_IMM } ) )
+				// 获取call后的rip
 				rva_rip = instruction.operands[ 0 ].imm;
 			else if ( instruction.is( X86_INS_JMP, { X86_OP_IMM } ) )
+				// 获取jmp后的rip，并去除已记录的jmp指令
 				rva_rip = instruction.operands[ 0 ].imm, output.stream.pop_back();
 			else if ( instruction.id == X86_INS_JMP || instruction.id == X86_INS_RET )
+				// 上面都不符合且指令是jmp或者ret就退出循环，认为当前块结束
 				break;
 			else
 				rva_rip += instruction.bytes.size();

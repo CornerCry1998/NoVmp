@@ -346,23 +346,29 @@ namespace vmp
 	{
 		// Unroll the stream
 		//
+		// 根据执行流程记录代码块
 		auto is = deobfuscate( vstate->img, rva_ep );
 
 		// Instruction stream should start with a 32 bit constant being pushed which is the 
 		// encrypted offset to the beginning of the virtual instruction stream
 		//
+		// 检查第一条指令是否是 push
 		fassert( is[ 0 ].is( X86_INS_PUSH, { X86_OP_IMM } ) );
+		// vm入口第一条指令 push imm, imm是vm密钥
 		uint32_t vip_offset_encrypted = is[ 0 ].operands[ 0 ].imm;
 
 		// Resolve the stack composition
 		//
 		x86_reg reg_reloc_delta;
+		// 模拟环境，模拟vm的push call 环境，写入栈
 		std::vector<vtil::operand> stack =
 		{
+			// push 密钥
 			{ vip_offset_encrypted, 64 },
-		{ vstate->img->get_real_image_base() + is[ 0 ].address + is[ 0 ].bytes.size() + 5, 64 }
+			// call后的返回地址 . call的下一行
+			{ vstate->img->get_real_image_base() + is[ 0 ].address + is[ 0 ].bytes.size() + 5, 64 }
 		};
-
+		// 进入虚拟化之前保存环境, 保存所有寄存器和EFLAGS
 		for ( int i = 0;; i++ )
 		{
 			// If PUSH R64
@@ -373,17 +379,21 @@ namespace vmp
 				stack.push_back( vtil::REG_FLAGS );
 
 			// End of pushed registers, reset stream
+			// 环境保存完成
 			if ( is[ i ].is( X86_INS_MOVABS, { X86_OP_REG,  X86_OP_IMM } ) )
 			{
 				reg_reloc_delta = is[ i ].operands[ 0 ].reg;
+				// 删除保存环境部分的指令
 				is.erase( i - 1 );
 				break;
 			}
 		}
+		// 检查是否保存了15个寄存器 + 1个FLAGS + 2个 push call环境
 		fassert( stack.size() == ( 16 + 2 ) );
 
 		// Resolve the stack composition
 		//
+		// 栈偏移 ， 使用了 18 * 8大小的栈
 		uint32_t ep_vip_offset = stack.size() * 8;
 
 		// Resolve the register mapped to be VSP
@@ -393,11 +403,14 @@ namespace vmp
 		{
 			// Find the first MOV r64, RSP
 			//
+			// 查找 MOV r64, RSP函数，返回指令偏移
 			i_save_registers_id = is.next( X86_INS_MOV, { X86_OP_REG, X86_OP_REG }, [ & ] ( const vtil::amd64::instruction& ins )
 			{
 				return ins.operands[ 1 ].reg == X86_REG_RSP;
 			}, i_save_registers_id );
+			// 检查是否找到指令
 			fassert( i_save_registers_id != -1 );
+			// 获取MOV r64, RSP 中的 r64，这是存放虚拟机VSP的寄存器
 			vstate->reg_vsp = is[ i_save_registers_id ].operands[ 0 ].reg;
 
 			// Check for any false positives
